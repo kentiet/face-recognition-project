@@ -17,8 +17,21 @@ class SignIn extends React.Component {
     }
 
     onSubmitSignIn = () => {
-        console.log(this.state)
-        this.props.onRouteChange('home')
+        fetch('http://localhost:3000/signin', {
+            method: 'post',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                email: this.state.signInEmail,
+                password: this.state.signInPassword
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data === 'success') {
+                this.props.onRouteChange('home')
+            }
+        })
+        
     }
 
     render(){
@@ -31,11 +44,21 @@ class SignIn extends React.Component {
                         <legend className="ph0 mh0 fw6 clip">Sign Up</legend>
                         <div className="mt3">
                             <label className="db fw4 lh-copy f6" htmlFor="email-address">Email address</label>
-                            <input className="pa2 input-reset ba bg-transparent w-100 measure" type="email" name="email-address"  id="email-address" />
+                            <input 
+                                className="pa2 input-reset ba bg-transparent w-100 measure" 
+                                type="email" 
+                                name="email-address"  
+                                id="email-address" 
+                                onChange={this.onEmailChange}/>
                         </div>
                         <div className="mt3">
                             <label className="db fw4 lh-copy f6" htmlFor="password">Password</label>
-                            <input className="b pa2 input-reset ba bg-transparent" type="password" name="password"  id="password" />
+                            <input 
+                                className="b pa2 input-reset ba bg-transparent" 
+                                type="password" 
+                                name="password"  
+                                id="password" 
+                                onChange={this.onPasswordChange}/>
                         </div>
                         </fieldset>
                         <div className="mt3">
