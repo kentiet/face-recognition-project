@@ -34,16 +34,16 @@ app.get('/', (req, res) => {
 
 app.post('/signin', (req,res)=>{
     // Load hash from your password DB.
-    bcrypt.compare("test", '$2a$10$tr9ruUdqaeGtjDNikWgaou/tyvTyR5vH5f.DjUC2jhOjOq1Z5Lea.', function(err, res) {
-        // res == true
-        console.log(res)
-    });
-    bcrypt.compare("veggies", '$2a$10$tr9ruUdqaeGtjDNikWgaou/tyvTyR5vH5f.DjUC2jhOjOq1Z5Lea.', function(err, res) {
-        // res = false
-        console.log('wrong', res)
-    });
+    // bcrypt.compare("test", '$2a$10$tr9ruUdqaeGtjDNikWgaou/tyvTyR5vH5f.DjUC2jhOjOq1Z5Lea.', function(err, res) {
+    //     // res == true
+    //     console.log(res)
+    // });
+    // bcrypt.compare("veggies", '$2a$10$tr9ruUdqaeGtjDNikWgaou/tyvTyR5vH5f.DjUC2jhOjOq1Z5Lea.', function(err, res) {
+    //     // res = false
+    //     console.log('wrong', res)
+    // });
     if (req.body.email === database.users[0].email && req.body.password === database.users[0].password) {
-        res.json('success')
+        res.json(database.users[0])
     } else {
         res.status(400).json('error ')
     }
@@ -78,7 +78,7 @@ app.get('/profile/:id', (req, res) => {
     if(!found) res.status(404).json('no such user')
 })
 
-app.post('/image', (req, res) => {
+app.put('/image', (req, res) => {
     const { id } = req.body;
     let found = false;
     database.users.forEach(user => {
