@@ -7,6 +7,18 @@ app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 app.use(cors())
 
+const knex = require('knex')({
+    client: 'pg',
+    connection: {
+      host : '127.0.0.1',
+      user : 'postgres',
+      password : 'kenpg',
+      database : 'smartbrain'
+    }
+  });
+
+knex.select('*').from('users').then(data => console.log(data))
+
 const database = {
     users: [
         {
