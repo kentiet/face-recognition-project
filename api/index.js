@@ -12,110 +12,80 @@ const knex = require('knex')({
     connection: {
       host : '127.0.0.1',
       user : 'postgres',
-      password : 'kenpg',
+      password : '@2Xuejingji3',
       database : 'smartbrain'
     }
   });
-
-knex.select('*').from('users').then(data => console.log(data))
-
-const database = {
-    users: [
-        {
-            id: '123',
-            name: 'John',
-            email: 'john@gmail.com',
-            password: 'cookies',
-            entries: 0,
-            joined: new Date()
-        },
-        {
-            id: '124',
-            name: 'Sally',
-            email: 'sally@gmail.com',
-            password: 'hello',
-            entries: 0,
-            joined: new Date()
-        }
-    ]
-}
 
 app.get('/', (req, res) => {
     res.send(database.users)
 }) 
 
 app.post('/signin', (req,res)=>{
-    // Load hash from your password DB.
-    // bcrypt.compare("test", '$2a$10$tr9ruUdqaeGtjDNikWgaou/tyvTyR5vH5f.DjUC2jhOjOq1Z5Lea.', function(err, res) {
-    //     // res == true
-    //     console.log(res)
-    // });
-    // bcrypt.compare("veggies", '$2a$10$tr9ruUdqaeGtjDNikWgaou/tyvTyR5vH5f.DjUC2jhOjOq1Z5Lea.', function(err, res) {
-    //     // res = false
-    //     console.log('wrong', res)
-    // });
-    if (req.body.email === database.users[0].email && req.body.password === database.users[0].password) {
-        res.json(database.users[0])
-    } else {
-        res.status(400).json('error ')
-    }
+    knex.select('email', 'hash').from('login').where('email', '=', req.body.email)
+    .then(data => {
+        // console.log(data[0])
+       const isValid= bcrypt.compareSync(req.body.password, data[0].hash)
+       if(isValid) {
+           return knex.select('*').from('users').where('email', '=', req.body.email)
+           .then(user => {
+               res.json(user[0])
+           })
+           .catch(err=> res.status(400).json('unable to get user'))
+       } else {
+        res.status(400).json('wrong credential')
+       }
+    })
 })
 
 app.post('/register', (req,res)=>{
     const {email, name, password} = req.body;
-    bcrypt.hash(password, null, null, function(err, hash) {
-        console.log(hash)
-    });
-    database.users.push({
-        id: '125',
-        name: name,
-        email: email,
-        password: password,
-        entries: 0,
-        joined: new Date()
+    const hash = bcrypt.hashSync(password)
+    knex.transaction(trx => {
+        trx.insert({
+            hash: hash,
+            email:email
+        })
+        .into('login')
+        .returning('email')
+        .then(loginEmail=>{
+            return trx('users')
+            .returning('*')
+            .insert({
+                email: loginEmail[0],
+                name: name,
+                joined: new Date()
+            })
+            .then(user => {
+                res.json(user[0])
+            })
+        })
+        .then(trx.commit)
+        .catch(trx.rollback)
     })
-    res.json(database.users[database.users.length-1])
+    .catch(err => res.status(400).json('unable to register'))
+    // res.json(database.users[database.users.length-1])
 })
 
 
 app.get('/profile/:id', (req, res) => {
     const { id } = req.params;
-    let found = false;
-    database.users.forEach(user => {
-        if (user.id == id){
-            found = true;
-            return res.json(user);
-        }
+    knex.select('*').from('users').where({'id': id}).then((user) => {
+        if(user.length) res.json(user[0])
+        else res.status(400).json('not found')
     })
-    if(!found) res.status(404).json('no such user')
 })
 
 app.put('/image', (req, res) => {
     const { id } = req.body;
-    let found = false;
-    database.users.forEach(user => {
-        if (user.id === id)
-        {
-            found = true;
-            user.entries++;
-            return res.json(user.entries);
-        }
+    knex('users').where('id', '=', id)
+    .increment('entries', 1)
+    .returning('entries')
+    .then(entries => {
+        res.json(entries[0])
     })
-    if(!found) res.status(404).json('no such user')
+    .catch(err => res.status(400).json('unable to count'))
 })
-
-
-// bcrypt.hash("bacon", null, null, function(err, hash) {
-//     // Store hash in your password DB.
-// });
-
-// // Load hash from your password DB.
-// bcrypt.compare("bacon", hash, function(err, res) {
-//     // res == true
-// });
-// bcrypt.compare("veggies", hash, function(err, res) {
-//     // res = false
-// });
 
 app.listen(3000, () => {
     console.log('app is running on port 3000')
