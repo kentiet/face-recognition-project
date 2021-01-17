@@ -8,12 +8,6 @@ import SignIn from './components/SignIn/SignIn'
 import Register from './components/Register/Register'
 import Particles from 'react-particles-js'
 import React, { Component } from 'react';
-import Clarifai from 'clarifai'
-
-const app = new Clarifai.App({
-  apiKey: 'a130d7cd2b35429ea59c17e5ebe6f778'
-  // apiKey: 'YOUR API KEY'
- });
 
 const particlesOptions = {
   particles: {
@@ -26,27 +20,30 @@ const particlesOptions = {
     }
   }
 }
+
+const initialState = {
+  input: '',
+  imgUrl: '',
+  box: {},
+  route: 'signin',
+  isSignedIn: false,
+  user: {
+    id: '',
+    name: '',
+    email: '',
+    entries: 0,
+    joined: ''
+  }
+}
 class App extends Component {
 
   constructor() {
     super();
-    this.state = {
-      input: '',
-      imgUrl: '',
-      box: {},
-      route: 'signin',
-      isSignedIn: false,
-      user: {
-        id: '',
-        name: '',
-        email: '',
-        entries: 0,
-        joined: ''
-      }
-    }
+    this.state = initialState
   }
 
   calculateFaceLocation = (data) => {
+      console.log(data)
       const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
       const img = document.getElementById('inputImage');
       const width = Number(img.width);
@@ -71,7 +68,14 @@ class App extends Component {
   onButtonSubmit = () => {
     this.setState({imgUrl: this.state.input})
     // console.log('click')
-    app.models.predict('53e1df302c079b3db8a0a36033ed2d15', this.state.input)
+    fetch('http://localhost:3000/imageUrl', {
+          method: 'post',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            id: this.state.input
+          })
+    })
+    .then(response => response.json())
     .then(res => {
       if(res) {
         fetch('http://localhost:3000/image', {
@@ -93,7 +97,7 @@ class App extends Component {
 
   onRouteChange = (route) => {
     if(route === 'signout') {
-      this.setState({isSignedIn: false})
+      this.setState(initialState)
     } else if (route === 'home'){
       this.setState({isSignedIn: true})
     }
@@ -133,7 +137,7 @@ class App extends Component {
           : (
             route === 'signin'
             ? <SignIn loadUser={this.loadUser} onRouteChange={this.onRouteChange}/> 
-            : <Register onRouteChange={this.onRouteChange}/> 
+            : <Register loadUser={this.loadUser} onRouteChange={this.onRouteChange}/> 
           )  
         }
       </div>
